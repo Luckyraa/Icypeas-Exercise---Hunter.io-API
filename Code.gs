@@ -1,22 +1,26 @@
+// Function to display the add-on option in the spreadsheet
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('Hunter.io')
-    .addItem('Open Settings', 'showSidebar')
+  ui.createMenu('My Hunter.io add-on')
+    .addItem('Open Sidebar', 'showSidebar')
     .addToUi();
 }
 
+
+// Function to display the Sidebar
 function showSidebar() {
   var html = HtmlService.createHtmlOutputFromFile('Sidebar')
-      .setTitle('Hunter.io Settings')
+      .setTitle('Hunter.io Sidebar')
       .setWidth(300);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
+
+// Function to save API key
 function saveApiKey(apiKey) {
   PropertiesService.getUserProperties().setProperty('HUNTER_API_KEY', apiKey);
   SpreadsheetApp.getUi().alert('API Key saved successfully!');
 }
-
 
 
 /**
@@ -30,7 +34,7 @@ function saveApiKey(apiKey) {
 function FindEmail(firstName, lastName, company) {
   var apiKey = PropertiesService.getUserProperties().getProperty('HUNTER_API_KEY');
   if (!apiKey) {
-    return 'Error: API key not found. Please set the API key using the Hunter.io menu.';
+    return 'Error: API key not found.';
   }
 
   if (!firstName || !lastName || !company) {
@@ -53,15 +57,16 @@ function FindEmail(firstName, lastName, company) {
 
     if (result.data && result.data.email) {
       return result.data.email;
-    } else if (result.errors) {
+    } else if (result.errors && result.errors.length > 0) {
       return 'Error: ' + result.errors[0].details;
     } else {
       return 'No email found';
     }
   } catch (e) {
-    return 'Error: Exception during API call: ' + e.message;
+    return 'Error: ' + e.message;
   }
 }
+
 
 /**
  * Helper function to validate if a string is a valid domain.
@@ -72,6 +77,7 @@ function isValidDomain(domain) {
   var domainPattern = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return domainPattern.test(domain);
 }
+
 
 /**
  * Helper function to get the domain from a company name using Hunter.io API.
@@ -88,6 +94,8 @@ function getDomainFromCompanyName(companyName) {
 
     if (result.data && result.data.domain) {
       return result.data.domain;
+    } else if (result.errors && result.errors.length > 0) {
+      return null;
     } else {
       return null;
     }
@@ -95,7 +103,6 @@ function getDomainFromCompanyName(companyName) {
     return null;
   }
 }
-
 
 
 // Function to process each row in the sheet and find emails
@@ -133,9 +140,103 @@ function processEmails() {
 }
 
 
+// Function to test each case, especially the error cases 
 function testFindEmail() {
-  var email = FindEmail('Florent', 'Gaujal', 'nsigma.fr');
-  Logger.log('Test Email: ' + email);
+  var originalApiKey = PropertiesService.getUserProperties().getProperty('HUNTER_API_KEY');
+  
+  // Set the API key for all tests except the one testing missing API key
+  if (!originalApiKey) {
+    PropertiesService.getUserProperties().setProperty('HUNTER_API_KEY', 'your_actual_api_key_here');
+  }
+
+  var testCases = [
+    {
+      description: "Valid inputs with a company domain",
+      firstName: "Sacha",
+      lastName: "Edery",
+      company: "nsigma.fr",
+      expectedResult: "sacha.edery@nsigma.fr"
+    },
+    {
+      description: "Valid inputs with a company name",
+      firstName: "Sacha",
+      lastName: "Edery",
+      company: "Nsigma",
+      expectedResult: "sacha.edery@nsigma.fr"
+    },
+    {
+      description: "Invalid domain",
+      firstName: "Alice",
+      lastName: "Johnson",
+      company: "invalid_domain",
+      expectedResult: "Error: Invalid company name or domain."
+    },
+    {
+      description: "Invalid company name",
+      firstName: "Bob",
+      lastName: "Brown",
+      company: "NonExistentCompany",
+      expectedResult: "Error: Invalid company name or domain."
+    },
+    {
+      description: "Missing first name",
+      firstName: "",
+      lastName: "White",
+      company: "example.com",
+      expectedResult: "Error: Missing input data"
+    },
+    {
+      description: "Missing last name",
+      firstName: "Charlie",
+      lastName: "",
+      company: "example.com",
+      expectedResult: "Error: Missing input data"
+    },
+    {
+      description: "Missing company",
+      firstName: "David",
+      lastName: "Green",
+      company: "",
+      expectedResult: "Error: Missing input data"
+    }
+  ];
+
+  // Run tests with API key set
+  var results = testCases.map(function(testCase) {
+    var result = FindEmail(testCase.firstName, testCase.lastName, testCase.company);
+    return {
+      description: testCase.description,
+      result: result,
+      passed: result === testCase.expectedResult || result.startsWith("Expected email address")
+    };
+  });
+
+  // Test case for API key not set
+  PropertiesService.getUserProperties().deleteProperty('HUNTER_API_KEY');
+  var noApiKeyTest = {
+    description: "API key not set",
+    firstName: "Eve",
+    lastName: "Black",
+    company: "example.com",
+    expectedResult: "Error: API key not found."
+  };
+  var noApiKeyResult = FindEmail(noApiKeyTest.firstName, noApiKeyTest.lastName, noApiKeyTest.company);
+  results.push({
+    description: noApiKeyTest.description,
+    result: noApiKeyResult,
+    passed: noApiKeyResult === noApiKeyTest.expectedResult
+  });
+
+  // Restore the original API key if it was set
+  if (originalApiKey) {
+    PropertiesService.getUserProperties().setProperty('HUNTER_API_KEY', originalApiKey);
+  }
+
+  // Log results
+  results.forEach(function(testResult) {
+    Logger.log("Test: " + testResult.description);
+    Logger.log("Result: " + testResult.result);
+    Logger.log("Passed: " + testResult.passed);
+    Logger.log("--------------------");
+  });
 }
-
-
