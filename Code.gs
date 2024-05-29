@@ -1,65 +1,102 @@
-// Function to run when the Google Sheet is opened
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Hunter.io')
-    .addItem('Set API Key', 'showApiKeyDialog')
-    .addItem('Find Emails', 'processEmails')
+    .addItem('Open Settings', 'showSidebar')
     .addToUi();
 }
 
-// Function to show a dialog for entering the Hunter.io API key
-function showApiKeyDialog() {
-  var htmlOutput = HtmlService.createHtmlOutputFromFile('ApiKeyDialog')
-      .setWidth(400)
-      .setHeight(300);
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Enter Hunter.io API Key');
+function showSidebar() {
+  var html = HtmlService.createHtmlOutputFromFile('Sidebar')
+      .setTitle('Hunter.io Settings')
+      .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
 }
 
-// Function to save the entered API key
 function saveApiKey(apiKey) {
   PropertiesService.getUserProperties().setProperty('HUNTER_API_KEY', apiKey);
   SpreadsheetApp.getUi().alert('API Key saved successfully!');
 }
 
-// Function to call the Hunter API and retrieve an email address
+
+
+/**
+ * Custom function to find an email using Hunter.io API with support for company names.
+ * @param {string} firstName - The first name of the person.
+ * @param {string} lastName - The last name of the person.
+ * @param {string} company - The company name or company email.
+ * @return {string} - The found email address or an error message.
+ * @customfunction
+ */
 function FindEmail(firstName, lastName, company) {
-  Logger.log('FindEmail called with: ' + firstName + ' ' + lastName + ' ' + company);
   var apiKey = PropertiesService.getUserProperties().getProperty('HUNTER_API_KEY');
   if (!apiKey) {
-    Logger.log('API key not found');
     return 'Error: API key not found. Please set the API key using the Hunter.io menu.';
   }
 
   if (!firstName || !lastName || !company) {
-    Logger.log('Missing input data');
     return 'Error: Missing input data';
   }
 
-  var url = 'https://api.hunter.io/v2/email-finder?domain=' + encodeURIComponent(company) + 
+  var domain = isValidDomain(company) ? company : getDomainFromCompanyName(company);
+  if (!domain) {
+    return 'Error: Invalid company name or domain.';
+  }
+
+  var url = 'https://api.hunter.io/v2/email-finder?domain=' + encodeURIComponent(domain) + 
             '&first_name=' + encodeURIComponent(firstName) + 
             '&last_name=' + encodeURIComponent(lastName) + 
             '&api_key=' + apiKey;
 
-  Logger.log('Request URL: ' + url);
-  
   try {
     var response = UrlFetchApp.fetch(url);
     var result = JSON.parse(response.getContentText());
-    Logger.log('API response: ' + response.getContentText());
-    
+
     if (result.data && result.data.email) {
       return result.data.email;
     } else if (result.errors) {
-      Logger.log('API error: ' + result.errors[0].details);
       return 'Error: ' + result.errors[0].details;
     } else {
       return 'No email found';
     }
   } catch (e) {
-    Logger.log('Exception during API call: ' + e.message);
     return 'Error: Exception during API call: ' + e.message;
   }
 }
+
+/**
+ * Helper function to validate if a string is a valid domain.
+ * @param {string} domain - The domain to validate.
+ * @return {boolean} - True if the domain is valid, false otherwise.
+ */
+function isValidDomain(domain) {
+  var domainPattern = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return domainPattern.test(domain);
+}
+
+/**
+ * Helper function to get the domain from a company name using Hunter.io API.
+ * @param {string} companyName - The company name to get the domain for.
+ * @return {string|null} - The domain if found, null otherwise.
+ */
+function getDomainFromCompanyName(companyName) {
+  var apiKey = PropertiesService.getUserProperties().getProperty('HUNTER_API_KEY');
+  var url = 'https://api.hunter.io/v2/domain-search?company=' + encodeURIComponent(companyName) + '&api_key=' + apiKey;
+
+  try {
+    var response = UrlFetchApp.fetch(url);
+    var result = JSON.parse(response.getContentText());
+
+    if (result.data && result.data.domain) {
+      return result.data.domain;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+
 
 // Function to process each row in the sheet and find emails
 function processEmails() {
@@ -94,3 +131,11 @@ function processEmails() {
 
   ui.alert('Email search completed.\nEmails found: ' + emailsFound + '\nErrors: ' + errors);
 }
+
+
+function testFindEmail() {
+  var email = FindEmail('Florent', 'Gaujal', 'nsigma.fr');
+  Logger.log('Test Email: ' + email);
+}
+
+
