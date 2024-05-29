@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+    }
+    h2 {
+      font-size: 24px;
+      color: #333;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      margin-top: 5px;
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    input[type="button"] {
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    input[type="button"]:hover {
+      background-color: #45a049;
+    }
+    .message {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h2>Hunter.io Settings</h2>
+  <form>
+    <label for="apiKey">Hunter.io API Key:</label>
+    <input type="text" id="apiKey" name="apiKey" placeholder="Enter your API key here">
+    <input type="button" value="Save API Key" onclick="saveApiKey()">
+    <div id="message" class="message"></div>
+  </form>
+  <script>
+    function saveApiKey() {
+      var apiKey = document.getElementById('apiKey').value;
+      if (apiKey.trim() === '') {
+        showMessage('Please enter an API key.', 'error');
+        return;
+      }
+      google.script.run.withSuccessHandler(function() {
+        showMessage('API Key saved successfully!', 'success');
+      }).withFailureHandler(function(error) {
+        showMessage('Error: ' + error.message, 'error');
+      }).saveApiKey(apiKey);
+    }
+
+    function showMessage(message, type) {
+      var messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = 'message ' + type;
+    }
+  </script>
+</body>
+</html>
