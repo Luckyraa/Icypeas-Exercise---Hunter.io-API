@@ -9,3 +9,5 @@ Just a little thing, it was specified to write a formula in this style "FindEmai
 Here is the link to my Google Sheet : https://docs.google.com/spreadsheets/d/1kj9DDZROFOQxl3didI5kiw83JfGU-743MmENLNuFWSU/edit?usp=sharing
 
 If you have any problem with the access, don't hesitate to contact me : https://www.linkedin.com/in/sacha-edery/
+
+Here is a little example of use [!Example-of-use.png]
