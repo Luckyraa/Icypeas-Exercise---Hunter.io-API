@@ -10,4 +10,5 @@ Here is the link to my Google Sheet : https://docs.google.com/spreadsheets/d/1kj
 
 If you have any problem with the access, don't hesitate to contact me : https://www.linkedin.com/in/sacha-edery/
 
-Here is a little example of use [!Example-of-use.png]
+Here is a little example of use ![Example of use](https://github.com/Luckyraa/Icypeas-Exercise---Hunter.io-API/assets/134300008/c46ac3e3-b3b4-407a-a282-0cb9f167c303)
+
